@@ -17,7 +17,7 @@ namespace TextMessageExtractor
         }
 
         HashSet<String> participants;
-        SortedSet<Message> messages;
+        public SortedSet<Message> messages;
 
         public Conversation(IEnumerable<String> participants)
         {

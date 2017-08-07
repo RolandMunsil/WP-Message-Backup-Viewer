@@ -36,16 +36,28 @@ namespace TextMessageExtractor
             {
                 String dataString;
 
-                if (contentType == "text/plain" || contentType == "application/smil")
+                if (contentType == "text/plain")
                 {
                     dataString = Encoding.Unicode.GetString(data);
                 }
                 else
                 {
-                    dataString = "<not visualizable>";
+                    dataString = $"<cannot represent as text>";
                 }
 
                 return $"{contentType}: {dataString}";
+            }
+
+            public String ToCommandLineString()
+            {
+                if (contentType == "text/plain")
+                {
+                    return Encoding.Unicode.GetString(data);
+                }
+                else
+                {
+                    return $"<{contentType} attachment>";
+                }
             }
         }
 
@@ -63,7 +75,7 @@ namespace TextMessageExtractor
         {
             get
             {
-                List<String> participants = new List<string>();
+                List<String> participants = new List<String>();
                 if (recipients != null)
                     participants.AddRange(recipients);
                 if (sender != null)
@@ -102,6 +114,18 @@ namespace TextMessageExtractor
                 }
                 writer.WriteLine("===Message body===");
                 writer.Write(body);                
+            }
+        }
+
+        public String ToCommandLineString()
+        {
+            if(this.type == MessageType.SMS)
+            {
+                return body;
+            }
+            else
+            {
+                return String.Join("\r\n", attachments.Select(a => a.ToCommandLineString()));
             }
         }
     }

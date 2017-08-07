@@ -6,15 +6,32 @@ using System.Threading.Tasks;
 
 namespace TextMessageExtractor
 {
-    class PhoneNumber
+    public class PhoneNumber : IComparable<PhoneNumber>, IEquatable<PhoneNumber>
     {
-        private String fullNumber;
+        private String extension;
+        private String countryNumber;
 
         public String FormattedNumber
         {
             get
             {
-                return $"{fullNumber.Substring(2, 3)}-{fullNumber.Substring(5, 3)}-{fullNumber.Substring(8, 3)}";
+                String formattedCountry = $"{countryNumber.Substring(0, 3)}-{countryNumber.Substring(3, 3)}-{countryNumber.Substring(6, 4)}";
+                if (extension != "1")
+                {
+                    return $"+{extension} {formattedCountry}";
+                }
+                else
+                {
+                    return formattedCountry;
+                }
+            }
+        }
+
+        private String JustNumbers
+        {
+            get
+            {
+                return extension + countryNumber;
             }
         }
 
@@ -22,30 +39,67 @@ namespace TextMessageExtractor
         {
             StringBuilder sb = new StringBuilder();
 
-            int i = 0;
-            if(number[0] != '+')
-            {
-                sb.Append("+1");
-                i = 1;
-            }
+            //int i = 0;
+            //if(number[0] == '+')
+            //{
+            //    sb.Append("+");
+            //    i = 1;
+            //}
+            //else
+            //{
+            //    sb.Append("+1");
+            //}
 
-            while(i < number.Length)
+            for(int i = 0; i < number.Length; i++)
             {
                 if (Char.IsDigit(number[i]))
                     sb.Append(number[i]);
-                i++;
             }
 
-            fullNumber = sb.ToString();
-            if(fullNumber.Length != 12)
+            String numbersOnly = sb.ToString();
+            if(numbersOnly.Length > 10)
             {
-                throw new ArgumentException();
+                extension = numbersOnly.Substring(0, numbersOnly.Length - 10);
+                countryNumber = numbersOnly.Substring(extension.Length, 10);
+            }
+            else
+            {
+                extension = "1";
+                countryNumber = numbersOnly;
+            }
+            if(countryNumber.Length != 10)
+            {
+                Console.WriteLine(number);
+                //System.Diagnostics.Debugger.Break();
             }
         }
 
         public override string ToString()
         {
             return FormattedNumber;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null || !(obj is PhoneNumber))
+                return false;
+
+            return this.JustNumbers.Equals(((PhoneNumber)obj).JustNumbers);
+        }
+
+        public override int GetHashCode()
+        {
+            return this.JustNumbers.GetHashCode();
+        }
+
+        public int CompareTo(PhoneNumber other)
+        {
+            return this.JustNumbers.CompareTo(other.JustNumbers);
+        }
+
+        public bool Equals(PhoneNumber other)
+        {
+            return this.JustNumbers.Equals(other.JustNumbers);
         }
     }
 }

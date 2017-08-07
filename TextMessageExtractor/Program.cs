@@ -12,10 +12,8 @@ namespace TextMessageExtractor
     {
         static String smsFile = @"C:\Users\rolan\Desktop\Text Message Backups\smsBackup\Mon, Apr 17 2017, 21-27-39 PM.msg";
         static String mmsFile = @"C:\Users\rolan\Desktop\Text Message Backups\mmsBackup\Mon, Apr 17 2017, 21-38-52 PM.msg";
-        //static String mmsFile = @"mmsNice.xml";
 
         static XmlReader reader;
-        //static List<Message> messages;
 
         static void Main(string[] args)
         {
@@ -79,6 +77,23 @@ namespace TextMessageExtractor
             //        );
             //}
 
+            for(int i = 0; i < convos.Count; i++)
+            {
+                Console.WriteLine($"[{i}] {convos[i].ToString()}");
+            }
+
+            while (true)
+            {
+                Console.WriteLine();
+                Console.Write("Enter conversation ID: ");
+                int index = Int32.Parse(Console.ReadLine());
+                foreach (Message m in convos[index].messages)
+                {
+                    String sender = m.incoming ? m.sender : "Me";
+                    Console.WriteLine($"{sender}: {m.ToCommandLineString()}");
+                }
+            }
+
             Console.ReadKey();
         }
 
@@ -105,11 +120,11 @@ namespace TextMessageExtractor
                 ErrorIfNodeNameIsNot("Recepients"); //Yes, it is spelled incorrectly
                 if (!reader.IsEmptyElement)
                 {
-                    message.recipients = new List<string>();
+                    message.recipients = new List<String>();
                     reader.Read();
                     while (reader.Name == "string" && reader.NodeType == XmlNodeType.Element)
                     {
-                        message.recipients.Add(reader.ReadElementContentAsString());
+                        message.recipients.Add(FixStringIfNumber(reader.ReadElementContentAsString()));
                     }
                     ErrorIfNodeNameIsNot("Recepients");
 
@@ -158,7 +173,7 @@ namespace TextMessageExtractor
                 //Sender
                 if (!reader.IsEmptyElement)
                 {
-                    message.sender = reader.ReadElementContentAsString();
+                    message.sender = FixStringIfNumber(reader.ReadElementContentAsString());
                 }
                 else
                 {
@@ -175,6 +190,37 @@ namespace TextMessageExtractor
             }
 
             return messages;
+        }
+
+        private static String FixStringIfNumber(String str)
+        {
+            if(!str.Any(c => Char.IsDigit(c)))
+            {
+                return str;
+            }
+            else if(str.Any(c => Char.IsLetter(c)))
+            {
+                return str;
+            }
+            else
+            {
+                String onlyNumbers = new String(str.Where(c => Char.IsDigit(c)).ToArray());
+                if(onlyNumbers.Length > 10)
+                {
+                    int lengthOfExt = onlyNumbers.Length - 10;
+                    String ext = onlyNumbers.Substring(0, lengthOfExt);
+                    if(ext == "1")
+                    {
+                        String last10 = onlyNumbers.Substring(ext.Length, 10);
+                        return last10;
+                    }
+                    else
+                    {
+                        return onlyNumbers;
+                    }
+                }
+                return onlyNumbers;
+            }
         }
 
         private static void PrettyPrintXML(String src, String dest)
