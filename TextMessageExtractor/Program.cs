@@ -10,15 +10,55 @@ namespace TextMessageExtractor
 {
     class Program
     {
-        static String smsFile = @"C:\Users\rolan\Desktop\Text Message Backups\smsBackup\Mon, Apr 17 2017, 21-27-39 PM.msg";
-        static String mmsFile = @"C:\Users\rolan\Desktop\Text Message Backups\mmsBackup\Mon, Apr 17 2017, 21-38-52 PM.msg";
-
-        static XmlReader reader;
+        const String backupFolder = @"..\..\..\Backup copy\";
 
         static void Main(string[] args)
         {
-            List<Message> mmsMessages = ReadMessages(mmsFile, Message.MessageType.MMS);
-            List<Message> smsMessages = ReadMessages(smsFile, Message.MessageType.SMS);
+            String currentPerson = null;
+            Dictionary<String, String> phoneNumToName = new Dictionary<string, string>();
+            foreach (String line in File.ReadAllLines(GetFileInFolder("contactsBackup", ".vcf")))
+            {
+                if (line.StartsWith("FN: "))
+                {
+                    currentPerson = line.Replace("FN: ", "").TrimEnd(' ');
+                }
+                else if (line.StartsWith("TEL;"))
+                {
+                    if (line.Contains("TYPE=CELL"))
+                    {
+                        int numStart = line.IndexOf("VOICE:") + "VOICE:".Length;
+                        String phoneNum = FixStringIfNumber(line.Substring(numStart));
+                        if (phoneNumToName.ContainsKey(phoneNum))
+                        {
+                            if (phoneNumToName[phoneNum] != currentPerson)
+                            {
+                                phoneNumToName[phoneNum] += $"/{currentPerson}";
+                            }
+                        }
+                        else
+                        {
+                            phoneNumToName[phoneNum] = currentPerson;
+                        }
+                    }
+                }
+            }
+
+            List<String> numbersForNamesWithMultipleNumbers = phoneNumToName
+                                                              .GroupBy(kv => kv.Value)
+                                                              .Where(g => g.Count() > 1)
+                                                              .SelectMany(g => g)
+                                                              .Select(kv=>kv.Key)
+                                                              .ToList();
+
+            foreach(String number in numbersForNamesWithMultipleNumbers)
+            {
+                phoneNumToName[number] += $" ({number})";
+            }
+
+            List<Message> smsMessages = ReadMessages(GetFileInFolder("smsBackup", ".msg"), Message.MessageType.SMS);
+            List<Message> mmsMessages = ReadMessages(GetFileInFolder("mmsBackup", ".msg"), Message.MessageType.MMS);
+
+            
 
             Console.WriteLine("Done reading messages");
             List<Message> allMessages = mmsMessages.Concat(smsMessages).ToList();
@@ -79,7 +119,7 @@ namespace TextMessageExtractor
 
             for(int i = 0; i < convos.Count; i++)
             {
-                Console.WriteLine($"[{i}] {convos[i].ToString()}");
+                Console.WriteLine($"[{i}] {convos[i].ToString(phoneNumToName)}");
             }
 
             while (true)
@@ -89,7 +129,7 @@ namespace TextMessageExtractor
                 int index = Int32.Parse(Console.ReadLine());
                 foreach (Message m in convos[index].messages)
                 {
-                    String sender = m.incoming ? m.sender : "Me";
+                    String sender = m.incoming ? phoneNumToName[m.sender] : "Me";
                     Console.WriteLine($"{sender}: {m.ToCommandLineString()}");
                 }
             }
@@ -97,9 +137,24 @@ namespace TextMessageExtractor
             Console.ReadKey();
         }
 
+        private static String GetFileInFolder(String folder, String fileExtension)
+        {
+            String fullFolderPath = Path.Combine(backupFolder, folder + @"\");
+
+            foreach (String filename in Directory.EnumerateFiles(fullFolderPath))
+            {
+                if (filename.EndsWith(fileExtension))
+                {
+                    return filename;
+                }
+            }
+
+            throw new FileNotFoundException();
+        }
+
         private static List<Message> ReadMessages(String uri, Message.MessageType messageType)
         {
-            reader = XmlReader.Create(uri);
+            XmlReader reader = XmlReader.Create(uri);
 
             while (reader.Name != "Message")
                 reader.Read();
@@ -113,11 +168,11 @@ namespace TextMessageExtractor
                 Message message = new Message();
                 message.type = messageType;
 
-                ErrorIfNodeNameIsNot("Message");
+                ErrorIfNodeNameIsNot(reader, "Message");
                 reader.Read();
 
                 //Recipients
-                ErrorIfNodeNameIsNot("Recepients"); //Yes, it is spelled incorrectly
+                ErrorIfNodeNameIsNot(reader, "Recepients"); //Yes, it is spelled incorrectly
                 if (!reader.IsEmptyElement)
                 {
                     message.recipients = new List<String>();
@@ -126,25 +181,25 @@ namespace TextMessageExtractor
                     {
                         message.recipients.Add(FixStringIfNumber(reader.ReadElementContentAsString()));
                     }
-                    ErrorIfNodeNameIsNot("Recepients");
+                    ErrorIfNodeNameIsNot(reader, "Recepients");
 
                 }
                 reader.Read();
 
                 //Body
-                ErrorIfNodeNameIsNot("Body");
+                ErrorIfNodeNameIsNot(reader, "Body");
                 message.body = reader.ReadElementContentAsString();
 
                 //IsIncoming
-                ErrorIfNodeNameIsNot("IsIncoming");
+                ErrorIfNodeNameIsNot(reader, "IsIncoming");
                 message.incoming = reader.ReadElementContentAsBoolean();
 
                 //IsRead (skip)
-                ErrorIfNodeNameIsNot("IsRead");
+                ErrorIfNodeNameIsNot(reader, "IsRead");
                 reader.ReadElementContentAsBoolean();
 
                 //Attachments
-                ErrorIfNodeNameIsNot("Attachments");
+                ErrorIfNodeNameIsNot(reader, "Attachments");
                 if (!reader.IsEmptyElement)
                 {
                     message.attachments = new List<Message.Attachment>();
@@ -167,7 +222,7 @@ namespace TextMessageExtractor
                 reader.Read();
 
                 //LocalTimestamp
-                ErrorIfNodeNameIsNot("LocalTimestamp");
+                ErrorIfNodeNameIsNot(reader, "LocalTimestamp");
                 message.localTimestamp = reader.ReadElementContentAsLong();
 
                 //Sender
@@ -183,7 +238,7 @@ namespace TextMessageExtractor
                 //Exit message
                 if (reader.NodeType != XmlNodeType.EndElement)
                     throw new Exception();
-                ErrorIfNodeNameIsNot("Message");
+                ErrorIfNodeNameIsNot(reader, "Message");
                 reader.Read();
 
                 messages.Add(message);
@@ -236,7 +291,7 @@ namespace TextMessageExtractor
             }
         }
 
-        private static void ErrorIfNodeNameIsNot(String name)
+        private static void ErrorIfNodeNameIsNot(XmlReader reader, String name)
         {
             if (reader.Name != name)
                 throw new Exception();

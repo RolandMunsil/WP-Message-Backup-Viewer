@@ -39,5 +39,10 @@ namespace TextMessageExtractor
         {
             return String.Join(", ", participants);
         }
+
+        public String ToString(Dictionary<String, String> numberToNameMap)
+        {
+            return String.Join(", ", participants.Select(p => numberToNameMap.ContainsKey(p) ? numberToNameMap[p] : p));
+        }
     }
 }
