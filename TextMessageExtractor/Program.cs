@@ -14,23 +14,18 @@ namespace TextMessageExtractor
         {
             String backupFolder = String.Join(" ", args).Trim('"');
 
-            Dictionary<string, string> phoneNumToName = CreateNumberToNameMap(backupFolder);
+            ContactDatabase contactDB = CreateNumberToNameMap(backupFolder, NormalizeNumberUnitedStates);
             Console.WriteLine("Finished reading contacts");
 
-            List<Message> smsMessages = ReadMessages(GetFileInFolder(backupFolder, "smsBackup", ".msg"), Message.MessageType.SMS);
-            List<Message> mmsMessages = ReadMessages(GetFileInFolder(backupFolder, "mmsBackup", ".msg"), Message.MessageType.MMS);
-            List<Message> allMessages = mmsMessages.Concat(smsMessages).ToList();
+            List<Message> allMessages = ReadAllMessages(backupFolder, NormalizeNumberUnitedStates);
             Console.WriteLine("Finished reading messages");
 
-            //Group by conversation
-            List<Conversation> convos = allMessages
-                                        .GroupBy(m => m.Participants, HashSet<String>.CreateSetComparer())
-                                        .Select(g => new Conversation(g))
-                                        .ToList();
+            List<Conversation> convos = GroupIntoConversations(allMessages);
 
             for (int i = 0; i < convos.Count; i++)
             {
-                Console.WriteLine($"[{i}] {convos[i].ToString(phoneNumToName)}");
+                String participantList = String.Join(", ", convos[i].Participants.Select(s => contactDB.TryGetContactName(s)));
+                Console.WriteLine($"[{i}] {participantList}");
             }
 
             while (true)
@@ -41,19 +36,14 @@ namespace TextMessageExtractor
                 foreach (Message m in convos[index])
                 {
                     String sender;
-                    if(!m.incoming)
+                    if (!m.incoming)
                     {
                         sender = "Me";
                     }
-                    else if(phoneNumToName.ContainsKey(m.sender))
-                    {
-                        //Use their name from the user's contacts
-                        sender = phoneNumToName[m.sender];
-                    }
                     else
                     {
-                        //Just use the raw address
-                        sender = m.sender;
+                        //Use their name from the user's contacts
+                        sender = contactDB.TryGetContactName(m.sender);
                     }
                     Console.WriteLine($"{sender}: {m.ToCommandLineString()}");
                 }
@@ -62,7 +52,41 @@ namespace TextMessageExtractor
             Console.ReadKey();
         }
 
-        private static Dictionary<string, string> CreateNumberToNameMap(string backupFolder)
+        private static List<Conversation> GroupIntoConversations(List<Message> allMessages)
+        {
+            return allMessages
+                   .GroupBy(m => m.Participants, HashSet<String>.CreateSetComparer())
+                   .Select(g => new Conversation(g))
+                   .ToList();
+        }
+
+        private static List<Message> ReadAllMessages(string backupFolder, Func<String, String> phoneNumNormalizer = null)
+        {
+            List<Message> smsMessages = ReadMessages(GetFileInFolder(backupFolder, "smsBackup", ".msg"), Message.MessageType.SMS);
+            List<Message> mmsMessages = ReadMessages(GetFileInFolder(backupFolder, "mmsBackup", ".msg"), Message.MessageType.MMS);
+            List<Message> allMessages = mmsMessages.Concat(smsMessages).ToList();
+
+            if(phoneNumNormalizer != null)
+            {
+                foreach(Message message in allMessages)
+                {
+                    if(message.sender != null)
+                    {
+                        message.sender = NormalizeIfNumber(message.sender, phoneNumNormalizer);
+                    }
+                    if(message.recipients != null)
+                    {
+                        for(int i = 0; i < message.recipients.Count; i++)
+                        {
+                            message.recipients[i] = NormalizeIfNumber(message.recipients[i], phoneNumNormalizer);
+                        }
+                    }
+                }
+            }
+            return allMessages;
+        }
+
+        private static ContactDatabase CreateNumberToNameMap(string backupFolder, Func<String, String> phoneNumNormalizer)
         {
             String currentPerson = null;
             Dictionary<String, String> phoneNumToName = new Dictionary<string, string>();
@@ -77,7 +101,7 @@ namespace TextMessageExtractor
                     if (line.Contains("TYPE=CELL"))
                     {
                         int numStart = line.IndexOf("VOICE:") + "VOICE:".Length;
-                        String phoneNum = FixStringIfNumber(line.Substring(numStart));
+                        String phoneNum = NormalizeIfNumber(line.Substring(numStart), phoneNumNormalizer);
                         if (phoneNumToName.ContainsKey(phoneNum))
                         {
                             if (phoneNumToName[phoneNum] != currentPerson)
@@ -105,7 +129,7 @@ namespace TextMessageExtractor
                 phoneNumToName[number] += $" ({number})";
             }
 
-            return phoneNumToName;
+            return new ContactDatabase(phoneNumToName);
         }
 
         private static String GetFileInFolder(String backupFolder, String folder, String fileExtension)
@@ -150,7 +174,7 @@ namespace TextMessageExtractor
                     reader.Read();
                     while (reader.Name == "string" && reader.NodeType == XmlNodeType.Element)
                     {
-                        message.recipients.Add(FixStringIfNumber(reader.ReadElementContentAsString()));
+                        message.recipients.Add(reader.ReadElementContentAsString());
                     }
                     ErrorIfNodeNameIsNot(reader, "Recepients");
 
@@ -199,7 +223,7 @@ namespace TextMessageExtractor
                 //Sender
                 if (!reader.IsEmptyElement)
                 {
-                    message.sender = FixStringIfNumber(reader.ReadElementContentAsString());
+                    message.sender = reader.ReadElementContentAsString();
                 }
                 else
                 {
@@ -217,35 +241,46 @@ namespace TextMessageExtractor
 
             return messages;
         }
-
-        private static String FixStringIfNumber(String str)
+        
+        private static String NormalizeIfNumber(String str, Func<String, String> normalizationFunc)
         {
-            if(!str.Any(c => Char.IsDigit(c)))
+            return IsPhoneNumber(str) ? normalizationFunc(str) : str;
+        }
+
+        private static String NormalizeNumberUnitedStates(String str)
+        {
+            String onlyNumbers = new String(str.Where(c => Char.IsDigit(c)).ToArray());
+            if(onlyNumbers.Length > 10)
             {
-                return str;
+                int lengthOfExt = onlyNumbers.Length - 10;
+                String ext = onlyNumbers.Substring(0, lengthOfExt);
+                if(ext == "1")
+                {
+                    String last10 = onlyNumbers.Substring(ext.Length, 10);
+                    return last10;
+                }
+                else
+                {
+                    return onlyNumbers;
+                }
             }
-            else if(str.Any(c => Char.IsLetter(c)))
+            return onlyNumbers;
+        }
+
+        //NOTE: this is probably not the same algorithm as windows phone, just what seems reasonable to me.
+        private static bool IsPhoneNumber(String str)
+        {
+            if (!str.Any(c => Char.IsDigit(c)))
             {
-                return str;
+                return false;
+            }
+            else if (str.Any(c => Char.IsLetter(c)))
+            {
+                return false;
             }
             else
             {
-                String onlyNumbers = new String(str.Where(c => Char.IsDigit(c)).ToArray());
-                if(onlyNumbers.Length > 10)
-                {
-                    int lengthOfExt = onlyNumbers.Length - 10;
-                    String ext = onlyNumbers.Substring(0, lengthOfExt);
-                    if(ext == "1")
-                    {
-                        String last10 = onlyNumbers.Substring(ext.Length, 10);
-                        return last10;
-                    }
-                    else
-                    {
-                        return onlyNumbers;
-                    }
-                }
-                return onlyNumbers;
+                return true;
             }
         }
 

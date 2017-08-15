@@ -12,6 +12,8 @@ namespace TextMessageExtractor
         private HashSet<String> participants;
         private List<Message> messages;
 
+        public IEnumerable<String> Participants => participants;
+
         public Conversation(IEnumerable<String> participants)
         {
             this.participants = new HashSet<String>(participants);
@@ -43,12 +45,6 @@ namespace TextMessageExtractor
         {
             return $"{(String.Join(", ", participants))} ({messages.Count} messages)";
         }
-
-        public String ToString(Dictionary<String, String> numberToNameMap)
-        {
-            return String.Join(", ", participants.Select(p => numberToNameMap.ContainsKey(p) ? numberToNameMap[p] : p));
-        }
-
 
         public IEnumerator<Message> GetEnumerator()
         {
