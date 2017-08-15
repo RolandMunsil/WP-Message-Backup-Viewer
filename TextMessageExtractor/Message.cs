@@ -27,13 +27,15 @@ namespace TextMessageExtractor
             public String contentType;
             public byte[] data;
 
+            public String DataAsText => Encoding.Unicode.GetString(data);
+            public bool IsText => contentType == "text/plain";
+
             public override String ToString()
             {
                 String dataString;
-
-                if (contentType == "text/plain")
+                if (IsText)
                 {
-                    dataString = Encoding.Unicode.GetString(data);
+                    dataString = DataAsText;
                 }
                 else
                 {
@@ -41,18 +43,6 @@ namespace TextMessageExtractor
                 }
 
                 return $"{contentType}: {dataString}";
-            }
-
-            public String ToCommandLineString()
-            {
-                if (contentType == "text/plain")
-                {
-                    return Encoding.Unicode.GetString(data);
-                }
-                else
-                {
-                    return $"<{contentType} attachment>";
-                }
             }
         }
 
@@ -126,7 +116,15 @@ namespace TextMessageExtractor
             }
             else
             {
-                return String.Join(Environment.NewLine, attachments.Select(a => a.ToCommandLineString()));
+                StringBuilder sb = new StringBuilder();
+                for(int i = 0; i < attachments.Count; i++)
+                {
+                    Attachment attachment = attachments[i];
+                    sb.Append(attachment.IsText ? attachment.DataAsText : $"<{attachment.contentType} attachment>");
+                    if (i != attachments.Count - 1)
+                        sb.AppendLine();
+                }
+                return sb.ToString();
             }
         }
     }

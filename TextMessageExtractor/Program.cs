@@ -21,64 +21,12 @@ namespace TextMessageExtractor
             List<Message> mmsMessages = ReadMessages(GetFileInFolder(backupFolder, "mmsBackup", ".msg"), Message.MessageType.MMS);
             List<Message> allMessages = mmsMessages.Concat(smsMessages).ToList();
             Console.WriteLine("Finished reading messages");
-            
 
             //Group by conversation
-            List<Conversation> convos = new List<Conversation>();
-
-            convos = allMessages
-                .GroupBy(m => m.Participants, HashSet<String>.CreateSetComparer())
-                .Select(g => new Conversation(g))
-                .ToList();
-
-            //foreach (Message message in allMessages)
-            //{
-            //    bool matchFound = false;
-            //    foreach (Conversation convo in convos)
-            //    {
-            //        if (convo.MessageBelongs(message))
-            //        {
-            //            convo.Add(message);
-            //            matchFound = true;
-            //            break;
-            //        }
-            //    }
-            //    if (matchFound)
-            //    {
-            //        continue;
-            //    }
-            //    else
-            //    {
-            //        Conversation newConvo = new Conversation(message.Participants);
-            //        newConvo.Add(message);
-            //        convos.Add(newConvo);
-            //    }
-            //}
-
-            //foreach (Message m in mmsMessages.Concat(smsMessages))
-            //{
-            //    m.SaveToFolder("Messages/" + m.localTimestamp.ToString());
-            //}
-            //Console.WriteLine("Done making folders");
-
-            //Console.WriteLine("Available numbers");
-            //WriteEnumerable(messages.Where(m => m.recipients != null).SelectMany(m => m.recipients).Distinct());
-
-            ////foreach(SMSMessage m in messages.Where(m => m.recipients != null && m.recipients.Count > 1))
-            ////{
-            ////    Console.WriteLine(m.body);
-            ////}
-            //while (true)
-            //{
-            //    Console.WriteLine();
-            //    Console.Write("Who would you like to see conversation history with? ");
-            //    String number = Console.ReadLine();
-            //    WriteEnumerable(from message in messages
-            //                    where message.sender == number || (!message.incoming && message.recipients.Contains(number))
-            //                    orderby message.localTimestamp
-            //                    select $"{(message.incoming ? "Them" : "Me")}: {message.body}"
-            //        );
-            //}
+            List<Conversation> convos = allMessages
+                                        .GroupBy(m => m.Participants, HashSet<String>.CreateSetComparer())
+                                        .Select(g => new Conversation(g))
+                                        .ToList();
 
             for (int i = 0; i < convos.Count; i++)
             {
@@ -92,7 +40,21 @@ namespace TextMessageExtractor
                 int index = Int32.Parse(Console.ReadLine());
                 foreach (Message m in convos[index])
                 {
-                    String sender = m.incoming ? phoneNumToName[m.sender] : "Me";
+                    String sender;
+                    if(!m.incoming)
+                    {
+                        sender = "Me";
+                    }
+                    else if(phoneNumToName.ContainsKey(m.sender))
+                    {
+                        //Use their name from the user's contacts
+                        sender = phoneNumToName[m.sender];
+                    }
+                    else
+                    {
+                        //Just use the raw address
+                        sender = m.sender;
+                    }
                     Console.WriteLine($"{sender}: {m.ToCommandLineString()}");
                 }
             }
