@@ -7,14 +7,9 @@ using System.Threading.Tasks;
 
 namespace TextMessageExtractor
 {
+    [System.Diagnostics.DebuggerDisplay("{ToCommandLineString()}")]
     public class Message
     {
-        public enum MessageType
-        {
-            SMS,
-            MMS
-        }
-
         public class Attachment
         {
             public static readonly Dictionary<String, String> Extensions = new Dictionary<String, String>()
@@ -61,9 +56,15 @@ namespace TextMessageExtractor
             }
         }
 
+        public enum MessageType
+        {
+            SMS,
+            MMS
+        }
+
         public long localTimestamp;
         public String body;
-        public MessageType type;
+        public MessageType msgType;
         public List<Attachment> attachments;
 
         public bool incoming;
@@ -71,13 +72,13 @@ namespace TextMessageExtractor
         public List<String> recipients;
         public String sender;
 
-        public List<String> Participants
+        public HashSet<String> Participants
         {
             get
             {
-                List<String> participants = new List<String>();
+                HashSet<String> participants = new HashSet<String>();
                 if (recipients != null)
-                    participants.AddRange(recipients);
+                    participants.UnionWith(recipients);
                 if (sender != null)
                     participants.Add(sender);
                 return participants;
@@ -102,7 +103,7 @@ namespace TextMessageExtractor
             //Other information
             using (StreamWriter writer = new StreamWriter(Path.Combine(folder, "Info.txt")))
             {
-                writer.WriteLine(incoming ? $"Incoming {type}" : $"Outgoing {type}");
+                writer.WriteLine(incoming ? $"Incoming {msgType}" : $"Outgoing {msgType}");
                 writer.WriteLine("APPROX TIME: " + DateTime.FromFileTimeUtc(localTimestamp).ToString("r"));
                 if (sender != null)
                 {
@@ -119,13 +120,13 @@ namespace TextMessageExtractor
 
         public String ToCommandLineString()
         {
-            if(this.type == MessageType.SMS)
+            if(this.msgType == MessageType.SMS)
             {
                 return body;
             }
             else
             {
-                return String.Join("\r\n", attachments.Select(a => a.ToCommandLineString()));
+                return String.Join(Environment.NewLine, attachments.Select(a => a.ToCommandLineString()));
             }
         }
     }

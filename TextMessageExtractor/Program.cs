@@ -10,13 +10,101 @@ namespace TextMessageExtractor
 {
     class Program
     {
-        const String backupFolder = @"..\..\..\Backup copy\";
-
         static void Main(string[] args)
+        {
+            String backupFolder = String.Join(" ", args).Trim('"');
+
+            Dictionary<string, string> phoneNumToName = CreateNumberToNameMap(backupFolder);
+            Console.WriteLine("Finished reading contacts");
+
+            List<Message> smsMessages = ReadMessages(GetFileInFolder(backupFolder, "smsBackup", ".msg"), Message.MessageType.SMS);
+            List<Message> mmsMessages = ReadMessages(GetFileInFolder(backupFolder, "mmsBackup", ".msg"), Message.MessageType.MMS);
+            List<Message> allMessages = mmsMessages.Concat(smsMessages).ToList();
+            Console.WriteLine("Finished reading messages");
+            
+
+            //Group by conversation
+            List<Conversation> convos = new List<Conversation>();
+
+            convos = allMessages
+                .GroupBy(m => m.Participants, HashSet<String>.CreateSetComparer())
+                .Select(g => new Conversation(g))
+                .ToList();
+
+            //foreach (Message message in allMessages)
+            //{
+            //    bool matchFound = false;
+            //    foreach (Conversation convo in convos)
+            //    {
+            //        if (convo.MessageBelongs(message))
+            //        {
+            //            convo.Add(message);
+            //            matchFound = true;
+            //            break;
+            //        }
+            //    }
+            //    if (matchFound)
+            //    {
+            //        continue;
+            //    }
+            //    else
+            //    {
+            //        Conversation newConvo = new Conversation(message.Participants);
+            //        newConvo.Add(message);
+            //        convos.Add(newConvo);
+            //    }
+            //}
+
+            //foreach (Message m in mmsMessages.Concat(smsMessages))
+            //{
+            //    m.SaveToFolder("Messages/" + m.localTimestamp.ToString());
+            //}
+            //Console.WriteLine("Done making folders");
+
+            //Console.WriteLine("Available numbers");
+            //WriteEnumerable(messages.Where(m => m.recipients != null).SelectMany(m => m.recipients).Distinct());
+
+            ////foreach(SMSMessage m in messages.Where(m => m.recipients != null && m.recipients.Count > 1))
+            ////{
+            ////    Console.WriteLine(m.body);
+            ////}
+            //while (true)
+            //{
+            //    Console.WriteLine();
+            //    Console.Write("Who would you like to see conversation history with? ");
+            //    String number = Console.ReadLine();
+            //    WriteEnumerable(from message in messages
+            //                    where message.sender == number || (!message.incoming && message.recipients.Contains(number))
+            //                    orderby message.localTimestamp
+            //                    select $"{(message.incoming ? "Them" : "Me")}: {message.body}"
+            //        );
+            //}
+
+            for (int i = 0; i < convos.Count; i++)
+            {
+                Console.WriteLine($"[{i}] {convos[i].ToString(phoneNumToName)}");
+            }
+
+            while (true)
+            {
+                Console.WriteLine();
+                Console.Write("Enter conversation ID: ");
+                int index = Int32.Parse(Console.ReadLine());
+                foreach (Message m in convos[index])
+                {
+                    String sender = m.incoming ? phoneNumToName[m.sender] : "Me";
+                    Console.WriteLine($"{sender}: {m.ToCommandLineString()}");
+                }
+            }
+
+            Console.ReadKey();
+        }
+
+        private static Dictionary<string, string> CreateNumberToNameMap(string backupFolder)
         {
             String currentPerson = null;
             Dictionary<String, String> phoneNumToName = new Dictionary<string, string>();
-            foreach (String line in File.ReadAllLines(GetFileInFolder("contactsBackup", ".vcf")))
+            foreach (String line in File.ReadAllLines(GetFileInFolder(backupFolder, "contactsBackup", ".vcf")))
             {
                 if (line.StartsWith("FN: "))
                 {
@@ -47,97 +135,18 @@ namespace TextMessageExtractor
                                                               .GroupBy(kv => kv.Value)
                                                               .Where(g => g.Count() > 1)
                                                               .SelectMany(g => g)
-                                                              .Select(kv=>kv.Key)
+                                                              .Select(kv => kv.Key)
                                                               .ToList();
 
-            foreach(String number in numbersForNamesWithMultipleNumbers)
+            foreach (String number in numbersForNamesWithMultipleNumbers)
             {
                 phoneNumToName[number] += $" ({number})";
             }
 
-            List<Message> smsMessages = ReadMessages(GetFileInFolder("smsBackup", ".msg"), Message.MessageType.SMS);
-            List<Message> mmsMessages = ReadMessages(GetFileInFolder("mmsBackup", ".msg"), Message.MessageType.MMS);
-
-            
-
-            Console.WriteLine("Done reading messages");
-            List<Message> allMessages = mmsMessages.Concat(smsMessages).ToList();
-
-            //Group by conversation
-            List<Conversation> convos = new List<Conversation>();
-
-            foreach (Message message in allMessages)
-            {
-                List<String> participants = message.Participants;
-
-                bool matchFound = false;
-                foreach (Conversation convo in convos)
-                {
-                    if (convo.ParticipantsMatch(participants))
-                    {
-                        convo.AddMessage(message);
-                        matchFound = true;
-                        break;
-                    }
-                }
-                if (matchFound)
-                {
-                    continue;
-                }
-                else
-                {
-                    Conversation newConvo = new Conversation(participants);
-                    newConvo.AddMessage(message);
-                    convos.Add(newConvo);
-                }
-            }
-
-            //foreach (Message m in mmsMessages.Concat(smsMessages))
-            //{
-            //    m.SaveToFolder("Messages/" + m.localTimestamp.ToString());
-            //}
-            //Console.WriteLine("Done making folders");
-
-            //Console.WriteLine("Available numbers");
-            //WriteEnumerable(messages.Where(m => m.recipients != null).SelectMany(m => m.recipients).Distinct());
-
-            ////foreach(SMSMessage m in messages.Where(m => m.recipients != null && m.recipients.Count > 1))
-            ////{
-            ////    Console.WriteLine(m.body);
-            ////}
-            //while (true)
-            //{
-            //    Console.WriteLine();
-            //    Console.Write("Who would you like to see conversation history with? ");
-            //    String number = Console.ReadLine();
-            //    WriteEnumerable(from message in messages
-            //                    where message.sender == number || (!message.incoming && message.recipients.Contains(number))
-            //                    orderby message.localTimestamp
-            //                    select $"{(message.incoming ? "Them" : "Me")}: {message.body}"
-            //        );
-            //}
-
-            for(int i = 0; i < convos.Count; i++)
-            {
-                Console.WriteLine($"[{i}] {convos[i].ToString(phoneNumToName)}");
-            }
-
-            while (true)
-            {
-                Console.WriteLine();
-                Console.Write("Enter conversation ID: ");
-                int index = Int32.Parse(Console.ReadLine());
-                foreach (Message m in convos[index].messages)
-                {
-                    String sender = m.incoming ? phoneNumToName[m.sender] : "Me";
-                    Console.WriteLine($"{sender}: {m.ToCommandLineString()}");
-                }
-            }
-
-            Console.ReadKey();
+            return phoneNumToName;
         }
 
-        private static String GetFileInFolder(String folder, String fileExtension)
+        private static String GetFileInFolder(String backupFolder, String folder, String fileExtension)
         {
             String fullFolderPath = Path.Combine(backupFolder, folder + @"\");
 
@@ -166,7 +175,7 @@ namespace TextMessageExtractor
                     break;
 
                 Message message = new Message();
-                message.type = messageType;
+                message.msgType = messageType;
 
                 ErrorIfNodeNameIsNot(reader, "Message");
                 reader.Read();
@@ -281,14 +290,6 @@ namespace TextMessageExtractor
         private static void PrettyPrintXML(String src, String dest)
         {
             XmlWriter.Create(dest, new XmlWriterSettings { Indent = true }).WriteNode(XmlReader.Create(src), true);
-        }
-
-        private static void WriteEnumerable<T>(IEnumerable<T> e)
-        {
-            foreach (T o in e)
-            {
-                Console.WriteLine(o);
-            }
         }
 
         private static void ErrorIfNodeNameIsNot(XmlReader reader, String name)

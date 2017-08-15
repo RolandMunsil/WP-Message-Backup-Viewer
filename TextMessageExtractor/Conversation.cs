@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,43 +7,57 @@ using System.Threading.Tasks;
 
 namespace TextMessageExtractor
 {
-    class Conversation
+    class Conversation : IEnumerable<Message>
     {
-        class MessageComparer : IComparer<Message>
-        {
-            public int Compare(Message x, Message y)
-            {
-                return x.localTimestamp.CompareTo(y.localTimestamp);
-            }
-        }
-
-        HashSet<String> participants;
-        public SortedSet<Message> messages;
+        private HashSet<String> participants;
+        private List<Message> messages;
 
         public Conversation(IEnumerable<String> participants)
         {
             this.participants = new HashSet<String>(participants);
-            messages = new SortedSet<Message>(new MessageComparer());
+            messages = new List<Message>();
         }
 
-        public bool ParticipantsMatch(IEnumerable<String> otherParticipants)
+        public Conversation(IEnumerable<Message> unsortedMessages)
         {
-            return this.participants.SetEquals(otherParticipants);
+            this.messages = new List<Message>();
+            foreach(Message message in unsortedMessages)
+            {
+                Add(message);
+            }
+            this.participants = messages[0].Participants;
         }
 
-        public void AddMessage(Message message)
+        public bool MessageBelongs(Message message)
         {
-            messages.Add(message);
+            return this.participants.SetEquals(message.Participants);
+        }
+
+        public void Add(Message message)
+        {
+            int index = messages.FindLastIndex(m => m.localTimestamp < message.localTimestamp);
+            messages.Insert(index + 1, message);
         }
 
         public override String ToString()
         {
-            return String.Join(", ", participants);
+            return $"{(String.Join(", ", participants))} ({messages.Count} messages)";
         }
 
         public String ToString(Dictionary<String, String> numberToNameMap)
         {
             return String.Join(", ", participants.Select(p => numberToNameMap.ContainsKey(p) ? numberToNameMap[p] : p));
+        }
+
+
+        public IEnumerator<Message> GetEnumerator()
+        {
+            return ((IEnumerable<Message>)messages).GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((IEnumerable<Message>)messages).GetEnumerator();
         }
     }
 }
