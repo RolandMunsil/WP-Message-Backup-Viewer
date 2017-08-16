@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.13
+VisualStudioVersion = 15.0.26730.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TextMessageExtractor", "TextMessageExtractor\TextMessageExtractor.csproj", "{63EAB5CC-FD45-49EF-A0CE-7C6F6FF91E6F}"
 EndProject

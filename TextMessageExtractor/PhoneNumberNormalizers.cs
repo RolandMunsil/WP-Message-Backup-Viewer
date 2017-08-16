@@ -12,7 +12,13 @@ namespace TextMessageExtractor
 
         public static Func<String, String> UnitedStates = delegate (String str)
         {
-            String onlyNumbers = new String(str.Where(c => Char.IsDigit(c)).ToArray());
+            StringBuilder sb = new StringBuilder();
+            for(int i = 0; i < str.Length; i++)
+            {
+                if (Char.IsDigit(str[i]))
+                    sb.Append(str[i]);
+            }
+            String onlyNumbers = sb.ToString();
             if (onlyNumbers.Length > 10)
             {
                 int lengthOfExt = onlyNumbers.Length - 10;

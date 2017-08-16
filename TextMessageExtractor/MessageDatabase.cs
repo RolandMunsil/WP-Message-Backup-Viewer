@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace TextMessageExtractor
 {
-    class MessageDatabase
+    class MessageDatabase : IEnumerable<Message>
     {
         private List<Message> messages;
 
@@ -28,5 +29,14 @@ namespace TextMessageExtractor
                   .ToList();
         }
 
+        public IEnumerator<Message> GetEnumerator()
+        {
+            return ((IEnumerable<Message>)messages).GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((IEnumerable<Message>)messages).GetEnumerator();
+        }
     }
 }

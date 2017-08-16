@@ -113,8 +113,8 @@ namespace TextMessageExtractor
                         Message.Attachment a = new Message.Attachment();
                         a.contentType = reader.ReadElementContentAsString();
 
-                        char[] base64 = reader.ReadElementContentAsString().ToCharArray();
-                        a.data = Convert.FromBase64CharArray(base64, 0, base64.Length);
+                        String base64 = reader.ReadElementContentAsString();
+                        a.data = Convert.FromBase64String(base64);
 
                         message.attachments.Add(a);
 
