@@ -13,14 +13,10 @@ namespace TextMessageExtractor
         String exportedBackupPath;
         Func<String, String> PhoneNumberNormalizer;
 
-        public Importer(String exportedBackupPath, Func<String, String> PhoneNumberNormalizer, bool normalizePermanently)
+        public Importer(String exportedBackupPath, Func<String, String> PhoneNumberNormalizer)
         {
             this.exportedBackupPath = exportedBackupPath;
             this.PhoneNumberNormalizer = PhoneNumberNormalizer;
-            if(normalizePermanently == false)
-            {
-                throw new NotImplementedException();
-            }
         }
 
         public ContactDatabase ImportContacts()
