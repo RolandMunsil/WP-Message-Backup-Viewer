@@ -13,6 +13,7 @@ namespace TextMessageExtractor
         private List<Message> messages;
 
         public IEnumerable<String> Participants => participants;
+        public long MostRecentMessageTime => messages[messages.Count - 1].localTimestamp;
 
         public Conversation(IEnumerable<String> participants)
         {
