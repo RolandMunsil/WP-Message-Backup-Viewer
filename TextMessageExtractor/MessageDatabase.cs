@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace TextMessageExtractor
 {
-    class MessageDatabase : IEnumerable<Message>
+    public class MessageDatabase : IEnumerable<Message>
     {
         private List<Message> messages;
 

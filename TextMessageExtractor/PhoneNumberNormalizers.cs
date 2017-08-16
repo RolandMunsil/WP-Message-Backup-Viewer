@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace TextMessageExtractor
 {
-    static class PhoneNumberNormalizers
+    public static class PhoneNumberNormalizers
     {
         public static Func<String, String> DontNormalize = (s) => s;
 

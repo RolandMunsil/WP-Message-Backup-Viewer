@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace TextMessageExtractor
 {
-    class Conversation : IEnumerable<Message>
+    public class Conversation : IEnumerable<Message>
     {
         private HashSet<String> participants;
         private List<Message> messages;

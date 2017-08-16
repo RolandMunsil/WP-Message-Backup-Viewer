@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace TextMessageExtractor
 {
-    class ContactDatabase
+    public class ContactDatabase
     {
         private Dictionary<String, String> numberToNameMap;
         private HashSet<String> namesWithMultipleNumbers;

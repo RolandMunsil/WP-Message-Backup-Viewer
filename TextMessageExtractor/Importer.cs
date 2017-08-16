@@ -8,7 +8,7 @@ using System.Xml;
 
 namespace TextMessageExtractor
 {
-    class Importer
+    public class Importer
     {
         String exportedBackupPath;
         Func<String, String> PhoneNumberNormalizer;
