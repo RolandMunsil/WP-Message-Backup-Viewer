@@ -53,12 +53,26 @@ namespace TextMessageExtractor.GUI
                     {
                         AddImage(attachment.data);
                     }
+                    else if (attachment.contentType != "application/smil")
+                    {
+                        stackPanel.Children.Add(new Label()
+                        {
+                            Height = 200,
+                            Background = Brushes.DarkGray,
+                            Content = $"Cannot display: Attachment of type{Environment.NewLine}{attachment.contentType}.",
+                            Foreground = Brushes.White,
+                            FontSize = 14,
+                            HorizontalContentAlignment = HorizontalAlignment.Center,
+                            VerticalContentAlignment = VerticalAlignment.Center,
+                            Margin = new Thickness(0, 2, 0, 2)
+                        });
+                    }
                 }
             }
-
-            AddExtraText(message.localTimestamp.ToString());
-
-            if(message.incoming && message.Participants.Count > 1)
+            //TODO: use Noda Time and allow user to adjust time zone
+            DateTime dateTime = DateTime.FromFileTimeUtc(message.localTimestamp);
+            AddExtraText(dateTime.ToString("MMM d, yyyy h:mm") + dateTime.ToString("%t").ToLower() + " UTC");
+            if (message.incoming && message.Participants.Count > 1)
             {
                 AddExtraText(contactDatabase.TryGetContactName(message.sender));
             }
@@ -72,7 +86,8 @@ namespace TextMessageExtractor.GUI
                 Foreground = Brushes.White,
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 13,
-                TextWrapping = TextWrapping.Wrap
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 2, 0, 2)
             });
         }
 
@@ -83,7 +98,7 @@ namespace TextMessageExtractor.GUI
                 Text = text,
                 Foreground = new SolidColorBrush(Color.FromRgb(151, 201, 239)),
                 TextWrapping = TextWrapping.Wrap,
-                FontSize = 11
+                FontSize = 11,
             });
         }
 
@@ -96,7 +111,8 @@ namespace TextMessageExtractor.GUI
 
             Image im = new Image()
             {
-                Source = src
+                Source = src,
+                Margin = new Thickness(0, 2, 0, 2)
             };
             stackPanel.Children.Add(im);
         }
