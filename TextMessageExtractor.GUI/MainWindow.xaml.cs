@@ -23,6 +23,27 @@ namespace TextMessageExtractor.GUI
         public MainWindow()
         {
             InitializeComponent();
+
+            Importer importer = new Importer("Backup copy", PhoneNumberNormalizers.UnitedStates);
+            ContactDatabase contactDB = importer.ImportContacts();
+            conversationViewer.ContactDatabase = contactDB;
+
+            MessageDatabase messageDB = importer.ImportMessages();
+            List<Conversation> conversations = messageDB.GetConversations();
+
+            Dictionary<String, Conversation> displayStrToConversation = new Dictionary<string, Conversation>();
+
+            foreach (Conversation conversation in conversations.OrderByDescending(c=>c.MostRecentMessageTime))
+            {
+                String displayStr = String.Join(", ", conversation.Participants.Select(s => contactDB.TryGetContactName(s)));
+                displayStrToConversation[displayStr] = conversation;
+                convoListBox.Items.Add(displayStr);
+            }
+
+            convoListBox.SelectionChanged += delegate (object sender, SelectionChangedEventArgs e)
+            {
+                conversationViewer.ViewConversation(displayStrToConversation[(String)e.AddedItems[0]]);
+            };
         }
     }
 }

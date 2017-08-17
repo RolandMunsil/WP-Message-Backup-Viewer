@@ -20,20 +20,23 @@ namespace TextMessageExtractor.GUI
     /// <summary>
     /// Interaction logic for MessageViewer.xaml
     /// </summary>
-    public partial class MessageViewer : UserControl
+    public partial class ConversationViewer : UserControl
     {
-        public MessageViewer()
+        public ContactDatabase ContactDatabase { get; set; }
+
+        public ConversationViewer()
         {
-            InitializeComponent();
+            InitializeComponent(); 
+        }
 
-            Importer importer = new Importer("Backup copy", PhoneNumberNormalizers.UnitedStates);
-            MessageDatabase messageDB = importer.ImportMessages();
-            Conversation conversation = messageDB.GetConversations()[0];
-
-            foreach(Message message in conversation)
+        public void ViewConversation(Conversation conversation)
+        {
+            stackPanel.Children.Clear();
+            foreach (Message message in conversation)
             {
-                stackPanel.Children.Add(new MessageControl(message) { MaxWidth = 270 });
+                stackPanel.Children.Add(new MessageControl(message, ContactDatabase) { MaxWidth = 270 });
             }
+            scrollViewer.ScrollToBottom();
         }
     }
 }

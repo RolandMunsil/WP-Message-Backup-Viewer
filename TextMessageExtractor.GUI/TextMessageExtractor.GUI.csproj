@@ -70,7 +70,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="MessageViewer.xaml">
+    <Page Include="ConversationViewer.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -79,8 +79,8 @@
     <Compile Include="MessageControl.xaml.cs">
       <DependentUpon>MessageControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="MessageViewer.xaml.cs">
-      <DependentUpon>MessageViewer.xaml</DependentUpon>
+    <Compile Include="ConversationViewer.xaml.cs">
+      <DependentUpon>ConversationViewer.xaml</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>

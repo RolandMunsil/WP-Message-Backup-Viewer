@@ -5,10 +5,11 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TextMessageExtractor.GUI"
         mc:Ignorable="d"
-        Title="MainWindow" Height="674.5" Width="720">
+        Title="MainWindow" Height="674.5" Width="1245.2" ResizeMode="CanMinimize">
     <Canvas>
-        <local:MessageViewer Height="640" Width="360">
-            
-        </local:MessageViewer>
+        <local:ConversationViewer x:Name="conversationViewer" Height="640" Width="360">
+
+        </local:ConversationViewer>
+        <ListBox x:Name="convoListBox" Height="606" Canvas.Left="360" Canvas.Top="34" Width="559"/>
     </Canvas>
 </Window>

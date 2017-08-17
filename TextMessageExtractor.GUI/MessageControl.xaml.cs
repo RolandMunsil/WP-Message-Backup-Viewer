@@ -21,7 +21,7 @@ namespace TextMessageExtractor.GUI
     /// </summary>
     public partial class MessageControl : UserControl
     {
-        public MessageControl(Message message)
+        public MessageControl(Message message, ContactDatabase contactDatabase)
         {
             InitializeComponent();
             this.Margin = new Thickness(0, 10, 0, 0);
@@ -60,7 +60,7 @@ namespace TextMessageExtractor.GUI
 
             if(message.incoming && message.Participants.Count > 1)
             {
-                AddExtraText(message.sender);
+                AddExtraText(contactDatabase.TryGetContactName(message.sender));
             }
         }
 
