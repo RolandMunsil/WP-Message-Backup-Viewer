@@ -26,13 +26,13 @@ namespace TextMessageExtractor.GUI
         {
             InitializeComponent();
 
-            Importer importer = new Importer(@"C:\Users\rolan\OneDrive\Code\VS2017 Projects\TextMessageExtractor\TextMessageExtractor.GUI\bin\Debug\Backup copy", PhoneNumberNormalizers.UnitedStates);
+            Importer importer = new Importer("Backup copy", PhoneNumberNormalizers.UnitedStates);
             MessageDatabase messageDB = importer.ImportMessages();
             Conversation conversation = messageDB.GetConversations()[0];
 
             foreach(Message message in conversation)
             {
-                stackPanel.Children.Add(new MessageControl(message) { Width = this.Width * 3.0 / 4.0 });
+                stackPanel.Children.Add(new MessageControl(message) { MaxWidth = 270 });
             }
         }
     }
