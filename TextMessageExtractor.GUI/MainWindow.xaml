@@ -1,0 +1,14 @@
+﻿<Window x:Class="TextMessageExtractor.GUI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:TextMessageExtractor.GUI"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="674.5" Width="720">
+    <Canvas>
+        <local:MessageViewer Height="640" Width="360">
+            
+        </local:MessageViewer>
+    </Canvas>
+</Window>
