@@ -24,13 +24,49 @@ namespace TextMessageExtractor.GUI
     {
         public ContactDatabase ContactDatabase { get; set; }
 
+        //int nextMessageToAdd = -1;
+        //Conversation conversation;
+        //bool dynamic = false;
+
         public ConversationViewer()
         {
-            InitializeComponent(); 
+            InitializeComponent();
+
+            //scrollViewer.ScrollChanged += delegate (object sender, ScrollChangedEventArgs e)
+            //{
+            //    if(dynamic && nextMessageToAdd >= 0)
+            //    {
+            //        if(e.VerticalOffset < 640 && e.ExtentHeightChange == 0)
+            //        {
+            //            stackPanel.Children.Insert(0, new MessageControl(conversation.ElementAt(nextMessageToAdd--), ContactDatabase) { MaxWidth = 270 });
+            //        }
+            //        else if(e.VerticalOffset < 640 && e.ExtentHeightChange > 0)
+            //        {
+            //            scrollViewer.ScrollToVerticalOffset(e.ExtentHeightChange + e.VerticalOffset);
+            //        }
+            //    }
+            //};
         }
 
         public void ViewConversation(Conversation conversation)
         {
+            //stackPanel.Children.Clear();
+            //stackPanel.UpdateLayout();
+            //scrollViewer.ScrollToBottom();
+
+            //dynamic = false;
+            //nextMessageToAdd = conversation.Count() - 1;
+
+            //this.conversation = conversation;
+
+            //while (nextMessageToAdd >= 0 && stackPanel.ActualHeight <= scrollViewer.ActualHeight + 640)
+            //{
+            //    stackPanel.Children.Insert(0, new MessageControl(conversation.ElementAt(nextMessageToAdd--), ContactDatabase) { MaxWidth = 270 });
+            //    stackPanel.UpdateLayout();
+            //}
+            //dynamic = true;
+
+
             stackPanel.Children.Clear();
             foreach (Message message in conversation)
             {

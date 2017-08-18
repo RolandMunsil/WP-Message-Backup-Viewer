@@ -11,5 +11,6 @@
 
         </local:ConversationViewer>
         <ListBox x:Name="convoListBox" Height="606" Canvas.Left="360" Canvas.Top="34" Width="559"/>
+        <Button x:Name="exportImagesButton" Content="Export all images" Height="32" Canvas.Left="982" Canvas.Top="126" Width="122" Click="exportImagesButton_Click"/>
     </Canvas>
 </Window>

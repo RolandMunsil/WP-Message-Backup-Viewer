@@ -12,7 +12,7 @@ namespace TextMessageExtractor
     {
         public class Attachment
         {
-            public static readonly Dictionary<String, String> Extensions = new Dictionary<String, String>()
+            private static readonly Dictionary<String, String> Extensions = new Dictionary<String, String>()
             {
                 { "text/plain", "txt" },
                 { "text/x-vcard", "vcard" },
@@ -29,6 +29,7 @@ namespace TextMessageExtractor
 
             public String DataAsText => Encoding.Unicode.GetString(data);
             public bool IsText => contentType == "text/plain";
+            public String DataFileExtension => Extensions[contentType];
 
             public override String ToString()
             {
@@ -85,7 +86,7 @@ namespace TextMessageExtractor
                 for (int i = 0; i < attachments.Count; i++)
                 {
                     Message.Attachment a = attachments[i];
-                    String extension = Attachment.Extensions[a.contentType];
+                    String extension = a.DataFileExtension;
                     File.WriteAllBytes(Path.Combine(folder, $"Attachment {i}.{extension}"), a.data);
                 }
             }
