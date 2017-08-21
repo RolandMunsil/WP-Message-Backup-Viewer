@@ -1,4 +1,4 @@
-# WP-Message-Backup-Extractor
+# WP-Message-Backup-Viewer
 Microsoft was nice enough to provide an app to back up messages and contacts from your Windows Phone. 
 However, the intended purpose of this is so that you can put them back on another Windows Phone, so
 there's no way (as far as I can tell) of viewing the messages on your computer. So I created this program
