@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.WindowsAPICodePack.Dialogs;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -26,27 +27,6 @@ namespace TextMessageExtractor.GUI
         public MainWindow()
         {
             InitializeComponent();
-
-            Importer importer = new Importer("Backup copy", PhoneNumberNormalizers.UnitedStates);
-            contactDB = importer.ImportContacts();
-            conversationViewer.ContactDatabase = contactDB;
-
-            MessageDatabase messageDB = importer.ImportMessages();
-            List<Conversation> conversations = messageDB.GetConversations();
-
-            displayStrToConversation = new Dictionary<string, Conversation>();
-
-            foreach (Conversation conversation in conversations.OrderByDescending(c=>c.MostRecentMessageTime))
-            {
-                String displayStr = String.Join(", ", conversation.Participants.Select(s => contactDB.TryGetContactName(s)));
-                displayStrToConversation[displayStr] = conversation;
-                convoListBox.Items.Add(displayStr);
-            }
-
-            convoListBox.SelectionChanged += delegate (object sender, SelectionChangedEventArgs e)
-            {
-                conversationViewer.ViewConversation(displayStrToConversation[(String)e.AddedItems[0]]);
-            };
         }
 
         private void exportImagesButton_Click(object sender, RoutedEventArgs e)
@@ -99,6 +79,45 @@ namespace TextMessageExtractor.GUI
 
                 messageID++;
             }
+        }
+
+        private void importFromFolderButton_Click(object sender, RoutedEventArgs e)
+        {
+            String folderPath;
+            using (CommonOpenFileDialog dialog = new CommonOpenFileDialog())
+            {
+                dialog.IsFolderPicker = true;
+                CommonFileDialogResult result = dialog.ShowDialog();
+                if(result == CommonFileDialogResult.Ok)
+                {
+                    folderPath = dialog.FileName;
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            Importer importer = new Importer(folderPath, PhoneNumberNormalizers.UnitedStates);
+            contactDB = importer.ImportContacts();
+            conversationViewer.ContactDatabase = contactDB;
+
+            MessageDatabase messageDB = importer.ImportMessages();
+            List<Conversation> conversations = messageDB.GetConversations();
+
+            displayStrToConversation = new Dictionary<string, Conversation>();
+
+            foreach (Conversation conversation in conversations.OrderByDescending(c => c.MostRecentMessageTime))
+            {
+                String displayStr = String.Join(", ", conversation.Participants.Select(s => contactDB.TryGetContactName(s)));
+                displayStrToConversation[displayStr] = conversation;
+                convoListBox.Items.Add(displayStr);
+            }
+
+            convoListBox.SelectionChanged += delegate (object s, SelectionChangedEventArgs sce)
+            {
+                conversationViewer.ViewConversation(displayStrToConversation[(String)sce.AddedItems[0]]);
+            };
         }
     }
 }
