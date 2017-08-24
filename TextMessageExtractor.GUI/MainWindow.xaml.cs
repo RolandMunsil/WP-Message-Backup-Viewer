@@ -79,7 +79,7 @@ namespace TextMessageExtractor.GUI
                 String pathStart = Path.Combine(dirInfo.FullName, messageString);
                 if (message.msgType == Message.MessageType.MMS)
                 {
-                    List<Message.Attachment> imageAttachments = message.attachments.Where(a => a.contentType.StartsWith("image/")).ToList();
+                    List<Message.Attachment> imageAttachments = message.attachments.Where(a => a.IsImage).ToList();
                     if(imageAttachments.Count == 0)
                     {
                         continue;

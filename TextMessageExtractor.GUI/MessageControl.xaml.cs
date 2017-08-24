@@ -13,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Xml;
 
 namespace TextMessageExtractor.GUI
 {
@@ -21,9 +22,13 @@ namespace TextMessageExtractor.GUI
     /// </summary>
     public partial class MessageControl : UserControl
     {
+        private Message message;
+
         public MessageControl(Message message, ContactDatabase contactDatabase)
         {
             InitializeComponent();
+            this.message = message;
+
             this.Margin = new Thickness(0, 10, 0, 0);
 
             stackPanel.Margin = new Thickness(8);
@@ -43,19 +48,21 @@ namespace TextMessageExtractor.GUI
                     AddExtraText(message.body);
                 }
 
-                foreach (Message.Attachment attachment in message.attachments)
+                //foreach (Message.Attachment attachment in message.attachments)
+                for(int i = 0; i < message.attachments.Count; i++)
                 {
-                    if (attachment.contentType == "text/plain")
+                    Message.Attachment attachment = message.attachments[i];
+                    if (attachment.IsText)
                     {
                         AddText(attachment.DataAsText);
                     }
-                    else if (attachment.contentType.StartsWith("image/"))
+                    else if (attachment.IsImage)
                     {
-                        AddImage(attachment.data);
+                        AddImage(attachment);
                     }
-                    else if (attachment.contentType != "application/smil")
+                    else if (!attachment.IsSMIL)
                     {
-                        stackPanel.Children.Add(new Label()
+                        Label attachmentLabel = new Label()
                         {
                             Height = 200,
                             Background = Brushes.DarkGray,
@@ -65,7 +72,15 @@ namespace TextMessageExtractor.GUI
                             HorizontalContentAlignment = HorizontalAlignment.Center,
                             VerticalContentAlignment = VerticalAlignment.Center,
                             Margin = new Thickness(0, 2, 0, 2)
-                        });
+                        };
+
+                        ContextMenu labelContextMenu = new ContextMenu();
+                        labelContextMenu.Items.Add(MakeMenuItem("Save Attachment As...", attachment, SaveAttachment_Click));
+                        attachmentLabel.ContextMenu = labelContextMenu;
+
+                        stackPanel.Children.Add(attachmentLabel);
+
+                        
                     }
                 }
             }
@@ -78,17 +93,42 @@ namespace TextMessageExtractor.GUI
             }
         }
 
+        private MenuItem MakeMenuItem(String text, object attachedObj, RoutedEventHandler ClickEventHandler)
+        {
+            MenuItem menuItem = new MenuItem()
+            {
+                Header = text,
+                Tag = attachedObj
+            };
+            menuItem.Click += ClickEventHandler;
+            return menuItem;
+        }
+
         new private void AddText(String text)
         {
-            stackPanel.Children.Add(new TextBlock()
+            TextBlock textBlock = new TextBlock()
             {
                 Text = text,
                 Foreground = Brushes.White,
                 FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 13,
                 TextWrapping = TextWrapping.Wrap,
-                Margin = new Thickness(0, 2, 0, 2)
-            });
+                Margin = new Thickness(0, 2, 0, 2),
+
+                //IsReadOnly = true,
+                //IsReadOnlyCaretVisible = false,
+
+                //Background = Brushes.Transparent,
+                //BorderBrush = Brushes.Transparent,
+                //SelectionBrush = Brushes.Black,
+                //BorderThickness = new Thickness(0),
+            };
+
+            ContextMenu textContextMenu = new ContextMenu();
+            textContextMenu.Items.Add(MakeMenuItem("Copy Text", text, CopyText_Click));
+            textBlock.ContextMenu = textContextMenu;
+
+            stackPanel.Children.Add(textBlock);
         }
 
         private void AddExtraText(String text)
@@ -102,11 +142,11 @@ namespace TextMessageExtractor.GUI
             });
         }
 
-        private void AddImage(byte[] imageData)
+        private void AddImage(Message.Attachment imageAttachment)
         {
             BitmapImage src = new BitmapImage();
             src.BeginInit();
-            src.StreamSource = new MemoryStream(imageData);
+            src.StreamSource = new MemoryStream(imageAttachment.data);
             src.EndInit();
 
             Image im = new Image()
@@ -114,7 +154,50 @@ namespace TextMessageExtractor.GUI
                 Source = src,
                 Margin = new Thickness(0, 2, 0, 2)
             };
+
+            ContextMenu imageContextMenu = new ContextMenu();
+            imageContextMenu.Items.Add(MakeMenuItem("Copy Image", src, CopyImage_Click));
+            imageContextMenu.Items.Add(MakeMenuItem("Save Image As...", imageAttachment, SaveAttachment_Click));
+            im.ContextMenu = imageContextMenu;
+
             stackPanel.Children.Add(im);
+        }
+
+        private void SaveAttachment(Message.Attachment attachment)
+        {
+            String filename = message.GetAttachmentFilenameFromSMIL(attachment);
+            if(filename == null)
+            {
+                filename = $"Untitled attachment.{attachment.DataFileExtension}";
+            }
+
+            String ext = System.IO.Path.GetExtension(filename);
+
+            Microsoft.Win32.SaveFileDialog dlg = new Microsoft.Win32.SaveFileDialog
+            {
+                FileName = filename,
+                DefaultExt = ext,
+                Filter = $"{ext}|*{ext}"
+            };
+            if (dlg.ShowDialog() == true)
+            {
+                File.WriteAllBytes(dlg.FileName, attachment.data);
+            }
+        }
+
+        private void SaveAttachment_Click(object sender, RoutedEventArgs e)
+        {
+            SaveAttachment((Message.Attachment)(((MenuItem)sender).Tag));
+        }
+
+        private void CopyImage_Click(object sender, RoutedEventArgs e)
+        {
+            Clipboard.SetImage((BitmapImage)(((MenuItem)sender).Tag));
+        }
+
+        private void CopyText_Click(object sender, RoutedEventArgs e)
+        {
+            Clipboard.SetText((String)(((MenuItem)sender).Tag));
         }
     }
 }
